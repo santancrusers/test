@@ -89,12 +89,12 @@ install_x_ui() {
     sleep 5
 
     # Set the configuration
-    /usr/local/x-ui/x-ui setting -username ana -password 2025A
+    /usr/local/x-ui/x-ui setting -username ali -password 1024Hetz
     /usr/local/x-ui/x-ui setting -port 54321
     /usr/local/x-ui/x-ui setting -webBasePath /letgodtrust
 
     echo -e "Configuration set: username=****, password=*****, port=54321, path=/letgodtrust"
-    # echo -e "Access the x-ui panel at http://<your-server-ip>:54321 with username 'ana' and password '2025Ana'."
+    # echo -e "Access the x-ui panel at http://<your-server-ip>:54321 with username 'ali' and password '1024Hetz'."
 }
 
 
