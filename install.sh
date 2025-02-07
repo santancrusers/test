@@ -89,7 +89,7 @@ install_x_ui() {
     sleep 5
 
     # Set the configuration
-    /usr/local/x-ui/x-ui setting -username ana -password 1024Hetz
+    /usr/local/x-ui/x-ui setting -username ana -password 2025A
     /usr/local/x-ui/x-ui setting -port 54321
     /usr/local/x-ui/x-ui setting -webBasePath /letgodtrust
 
