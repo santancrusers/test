@@ -320,7 +320,7 @@ add_config1() {
         response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/add' \
     --header 'Accept: application/json' \
     --header 'Content-Type: application/json' \
-    --data '{"id":13,"userId":0,"up":0,"down":0,"total":0,"remark":"real","enable":true,"expiryTime":0,"listen":"","port":80,"protocol":"vless","settings":"{\n  \"clients\": [\n    {\n      \"email\": \"76e5lrto\",\n      \"enable\": true,\n      \"expiryTime\": 0,\n      \"flow\": \"\",\n      \"id\": \"ef27e62d-91bd-4676-b9ce-8743a73eda07\",\n      \"limitIp\": 0,\n      \"reset\": 0,\n      \"subId\": \"9uymgt1kvr0e29by\",\n      \"tgId\": \"\",\n      \"totalGB\": 0\n    }\n  ],\n  \"decryption\": \"none\",\n  \"fallbacks\": []\n}","streamSettings":"{\n  \"network\": \"tcp\",\n  \"security\": \"reality\",\n  \"externalProxy\": [],\n  \"realitySettings\": {\n    \"show\": false,\n    \"xver\": 0,\n    \"dest\": \"zula.ir:443\",\n    \"serverNames\": [\n      \"zula.ir\",\n      \"www.zula.ir\"\n    ],\n    \"privateKey\": \"GOSsTz2NZzgas-D0Vwr7lT1uCUEu8la1bH2FetFrIEQ\",\n    \"minClient\": \"\",\n    \"maxClient\": \"\",\n    \"maxTimediff\": 0,\n    \"shortIds\": [\n      \"94aa1bdc\"\n    ],\n    \"settings\": {\n      \"publicKey\": \"JZ4tr79OsYphVtftVy6qv5mJ3XDtpyQi-ed3fqnq_RY\",\n      \"fingerprint\": \"chrome\",\n      \"serverName\": \"\",\n      \"spiderX\": \"/\"\n    }\n  },\n  \"tcpSettings\": {\n    \"acceptProxyProtocol\": false,\n    \"header\": {\n      \"type\": \"none\"\n    }\n  }\n}","tag":"inbound-80","sniffing":"{\n  \"enabled\": true,\n  \"destOverride\": [\n    \"http\",\n    \"tls\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[{"id":33,"inboundId":13,"enable":true,"email":"76e5lrto","up":8499,"down":26492,"expiryTime":0,"total":0,"reset":0}]}')
+    --data '{"id":13,"userId":0,"up":0,"down":0,"total":0,"remark":"real","enable":true,"expiryTime":0,"listen":"","port":443,"protocol":"vless","settings":"{\n  \"clients\": [\n    {\n      \"id\": \"ef27e62d-91bd-4676-b9ce-8743a73eda07\",\n      \"flow\": \"\",\n      \"email\": \"76e5lrto\",\n      \"limitIp\": 0,\n      \"totalGB\": 0,\n      \"expiryTime\": 0,\n      \"enable\": true,\n      \"tgId\": \"\",\n      \"subId\": \"9uymgt1kvr0e29by\",\n      \"comment\": \"\",\n      \"reset\": 0\n    }\n  ],\n  \"decryption\": \"none\",\n  \"fallbacks\": []\n}","streamSettings":"{\n  \"network\": \"tcp\",\n  \"security\": \"reality\",\n  \"externalProxy\": [],\n  \"realitySettings\": {\n    \"show\": false,\n    \"xver\": 0,\n    \"dest\": \"zula.ir:443\",\n    \"serverNames\": [\n      \"zula.ir\",\n      \"www.zula.ir\"\n    ],\n    \"privateKey\": \"GOSsTz2NZzgas-D0Vwr7lT1uCUEu8la1bH2FetFrIEQ\",\n    \"minClient\": \"\",\n    \"maxClient\": \"\",\n    \"maxTimediff\": 0,\n    \"shortIds\": [\n      \"94aa1bdc\"\n    ],\n    \"settings\": {\n      \"publicKey\": \"JZ4tr79OsYphVtftVy6qv5mJ3XDtpyQi-ed3fqnq_RY\",\n      \"fingerprint\": \"chrome\",\n      \"serverName\": \"\",\n      \"spiderX\": \"/\"\n    }\n  },\n  \"tcpSettings\": {\n    \"acceptProxyProtocol\": false,\n    \"header\": {\n      \"type\": \"none\"\n    }\n  }\n}","tag":"inbound-443","sniffing":"{\n  \"enabled\": true,\n  \"destOverride\": [\n    \"http\",\n    \"tls\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[{"id":33,"inboundId":13,"enable":true,"email":"76e5lrto","up":8499,"down":26492,"expiryTime":0,"total":0,"reset":0}]}')
 
     if echo "$response" | grep -q '"success":true'; then
         echo -e "${green}Client configuration added successfully!${plain}"
@@ -444,7 +444,7 @@ add_config1() {
           response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/add' \
     --header 'Accept: application/json' \
     --header 'Content-Type: application/json' \
-    --data '{"id":20,"userId":0,"up":0,"down":0,"total":0,"remark":"digi2","enable":true,"expiryTime":0,"listen":"","port":443,"protocol":"vless","settings":"{\n  \"clients\": [\n    {\n      \"id\": \"6d0a296f-0d49-4d8e-959c-1d0543472477\",\n      \"flow\": \"\",\n      \"email\": \"2pvzhn1k\",\n      \"limitIp\": 0,\n      \"totalGB\": 0,\n      \"expiryTime\": 0,\n      \"enable\": true,\n      \"tgId\": \"\",\n      \"subId\": \"7tnyc3zrjv3vlp4h\",\n      \"comment\": \"\",\n      \"reset\": 0\n    }\n  ],\n  \"decryption\": \"none\",\n  \"fallbacks\": []\n}","streamSettings":"{\n  \"network\": \"ws\",\n  \"security\": \"none\",\n  \"externalProxy\": [],\n  \"wsSettings\": {\n    \"acceptProxyProtocol\": false,\n    \"path\": \"/?ed=2048\",\n    \"host\": \"\",\n    \"headers\": {},\n    \"heartbeatPeriod\": 0\n  }\n}","tag":"inbound-443","sniffing":"{\n  \"enabled\": true,\n  \"destOverride\": [\n    \"http\",\n    \"tls\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[{"id":80,"inboundId":20,"enable":true,"email":"2pvzhn1k","up":0,"down":0,"expiryTime":0,"total":0,"reset":0}]}')
+    --data '{"id":21,"userId":0,"up":0,"down":0,"total":0,"remark":"digi3","enable":true,"expiryTime":0,"listen":"","port":80,"protocol":"vless","settings":"{\n  \"clients\": [\n    {\n      \"id\": \"de6c9537-2eb7-4d0f-9bb0-d6623c1f284e\",\n      \"flow\": \"\",\n      \"email\": \"ui5urdyh\",\n      \"limitIp\": 0,\n      \"totalGB\": 0,\n      \"expiryTime\": 0,\n      \"enable\": true,\n      \"tgId\": \"\",\n      \"subId\": \"je8fupxcnwb96z26\",\n      \"comment\": \"\",\n      \"reset\": 0\n    }\n  ],\n  \"decryption\": \"none\",\n  \"fallbacks\": []\n}","streamSettings":"{\n  \"network\": \"ws\",\n  \"security\": \"none\",\n  \"externalProxy\": [],\n  \"wsSettings\": {\n    \"acceptProxyProtocol\": false,\n    \"path\": \"/?ed=2048\",\n    \"host\": \"\",\n    \"headers\": {},\n    \"heartbeatPeriod\": 0\n  }\n}","tag":"inbound-80","sniffing":"{\n  \"enabled\": true,\n  \"destOverride\": [\n    \"http\",\n    \"tls\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[{"id":112,"inboundId":21,"enable":true,"email":"ui5urdyh","up":0,"down":0,"expiryTime":0,"total":0,"reset":0}]}')
 
     if echo "$response" | grep -q '"success":true'; then
         echo -e "${green}Client configuration added successfully!${plain}"
@@ -462,7 +462,7 @@ add_config1() {
         --header 'Accept: application/json' \
         --header 'Content-Type: application/json' \
         --data "{
-        \"id\": 20,
+        \"id\": 21,
           \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"${!UUID_VAR}\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"$EMAIL\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
         }")
     
@@ -483,7 +483,7 @@ add_config1() {
     --header 'Accept: application/json' \
     --header 'Content-Type: application/json' \
     --data "{
-      \"id\": 20,
+      \"id\": 21,
       \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"$uuidIP\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"BYIP\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
     }")
     
@@ -510,7 +510,7 @@ add_config1() {
             --header 'Accept: application/json' \
             --header 'Content-Type: application/json' \
             --data "{
-              \"id\": 20,
+              \"id\": 21,
               \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"${!UUID_VAR}\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"$EMAIL\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
             }")
         
