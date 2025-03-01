@@ -348,7 +348,7 @@ add_config1() {
             response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/add' \
     --header 'Accept: application/json' \
     --header 'Content-Type: application/json' \
-    --data '{"id":1,"userId":0,"up":0,"down":0,"total":0,"remark":"444","enable":true,"expiryTime":0,"listen":"","port":443,"protocol":"vless","settings":"{\n  \"clients\": [\n    {\n      \"email\": \"mie69jgo\",\n      \"enable\": true,\n      \"expiryTime\": 0,\n      \"flow\": \"\",\n      \"id\": \"cef5a8b9-b045-4d30-e662-3b5f1c9448da\",\n      \"limitIp\": 0,\n      \"reset\": 0,\n      \"subId\": \"ux35ne1tuee398vw\",\n      \"tgId\": 0,\n      \"totalGB\": 0\n    },\n    {\n      \"email\": \"1dj5x8fc\",\n      \"enable\": true,\n      \"expiryTime\": 0,\n      \"flow\": \"\",\n      \"id\": \"a61eb3a2-1adb-48cb-ab46-ce225769de16\",\n      \"limitIp\": 0,\n      \"reset\": 0,\n      \"subId\": \"dxi9qlj7ypv11eu8\",\n      \"tgId\": \"\",\n      \"totalGB\": 0\n    },\n    {\n      \"email\": \"tge2rx2m\",\n      \"enable\": true,\n      \"expiryTime\": 0,\n      \"flow\": \"\",\n      \"id\": \"0dd1347e-e342-456c-b802-779b859cca42\",\n      \"limitIp\": 0,\n      \"reset\": 0,\n      \"subId\": \"st1gj7nivir9thf4\",\n      \"tgId\": \"\",\n      \"totalGB\": 0\n    }\n  ],\n  \"decryption\": \"none\",\n  \"fallbacks\": []\n}","streamSettings":"{\n  \"network\": \"ws\",\n  \"security\": \"tls\",\n  \"externalProxy\": [],\n  \"tlsSettings\": {\n    \"serverName\": \"\",\n    \"minVersion\": \"1.2\",\n    \"maxVersion\": \"1.3\",\n    \"cipherSuites\": \"\",\n    \"rejectUnknownSni\": false,\n    \"disableSystemRoot\": false,\n    \"enableSessionResumption\": false,\n    \"certificates\": [\n      {\n        \"certificateFile\": \"/root/cert.crt\",\n        \"keyFile\": \"/root/private.key\",\n        \"ocspStapling\": 3600,\n        \"oneTimeLoading\": false,\n        \"usage\": \"encipherment\"\n      }\n    ],\n    \"alpn\": [\n      \"h2\",\n      \"http/1.1\"\n    ],\n    \"settings\": {\n      \"allowInsecure\": false,\n      \"fingerprint\": \"\"\n    }\n  },\n  \"wsSettings\": {\n    \"acceptProxyProtocol\": false,\n    \"path\": \"/users?ed=2560\",\n    \"host\": \"\",\n    \"headers\": {}\n  }\n}","tag":"inbound-443","sniffing":"{\n  \"enabled\": true,\n  \"destOverride\": [\n    \"http\",\n    \"tls\",\n    \"quic\",\n    \"fakedns\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[{"id":1,"inboundId":1,"enable":true,"email":"mie69jgo","up":51459880,"down":879766817,"expiryTime":0,"total":0,"reset":0},{"id":31,"inboundId":1,"enable":true,"email":"1dj5x8fc","up":4249,"down":6155,"expiryTime":0,"total":0,"reset":0},{"id":32,"inboundId":1,"enable":true,"email":"tge2rx2m","up":198594,"down":709208,"expiryTime":0,"total":0,"reset":0}]}')
+    --data '{"id":1,"userId":0,"up":0,"down":0,"total":0,"remark":"444","enable":true,"expiryTime":0,"listen":"","port":444,"protocol":"vless","settings":"{\n  \"clients\": [\n    {\n      \"email\": \"mie69jgo\",\n      \"enable\": true,\n      \"expiryTime\": 0,\n      \"flow\": \"\",\n      \"id\": \"cef5a8b9-b045-4d30-e662-3b5f1c9448da\",\n      \"limitIp\": 0,\n      \"reset\": 0,\n      \"subId\": \"ux35ne1tuee398vw\",\n      \"tgId\": 0,\n      \"totalGB\": 0\n    },\n    {\n      \"email\": \"1dj5x8fc\",\n      \"enable\": true,\n      \"expiryTime\": 0,\n      \"flow\": \"\",\n      \"id\": \"a61eb3a2-1adb-48cb-ab46-ce225769de16\",\n      \"limitIp\": 0,\n      \"reset\": 0,\n      \"subId\": \"dxi9qlj7ypv11eu8\",\n      \"tgId\": \"\",\n      \"totalGB\": 0\n    },\n    {\n      \"email\": \"tge2rx2m\",\n      \"enable\": true,\n      \"expiryTime\": 0,\n      \"flow\": \"\",\n      \"id\": \"0dd1347e-e342-456c-b802-779b859cca42\",\n      \"limitIp\": 0,\n      \"reset\": 0,\n      \"subId\": \"st1gj7nivir9thf4\",\n      \"tgId\": \"\",\n      \"totalGB\": 0\n    }\n  ],\n  \"decryption\": \"none\",\n  \"fallbacks\": []\n}","streamSettings":"{\n  \"network\": \"ws\",\n  \"security\": \"tls\",\n  \"externalProxy\": [],\n  \"tlsSettings\": {\n    \"serverName\": \"\",\n    \"minVersion\": \"1.2\",\n    \"maxVersion\": \"1.3\",\n    \"cipherSuites\": \"\",\n    \"rejectUnknownSni\": false,\n    \"disableSystemRoot\": false,\n    \"enableSessionResumption\": false,\n    \"certificates\": [\n      {\n        \"certificateFile\": \"/root/cert.crt\",\n        \"keyFile\": \"/root/private.key\",\n        \"ocspStapling\": 3600,\n        \"oneTimeLoading\": false,\n        \"usage\": \"encipherment\"\n      }\n    ],\n    \"alpn\": [\n      \"h2\",\n      \"http/1.1\"\n    ],\n    \"settings\": {\n      \"allowInsecure\": false,\n      \"fingerprint\": \"\"\n    }\n  },\n  \"wsSettings\": {\n    \"acceptProxyProtocol\": false,\n    \"path\": \"/users?ed=2560\",\n    \"host\": \"\",\n    \"headers\": {}\n  }\n}","tag":"inbound-443","sniffing":"{\n  \"enabled\": true,\n  \"destOverride\": [\n    \"http\",\n    \"tls\",\n    \"quic\",\n    \"fakedns\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[{"id":1,"inboundId":1,"enable":true,"email":"mie69jgo","up":51459880,"down":879766817,"expiryTime":0,"total":0,"reset":0},{"id":31,"inboundId":1,"enable":true,"email":"1dj5x8fc","up":4249,"down":6155,"expiryTime":0,"total":0,"reset":0},{"id":32,"inboundId":1,"enable":true,"email":"tge2rx2m","up":198594,"down":709208,"expiryTime":0,"total":0,"reset":0}]}')
 
     if echo "$response" | grep -q '"success":true'; then
         echo -e "${green}Client configuration added successfully!${plain}"
@@ -376,76 +376,7 @@ add_config1() {
     fi
     
     
-       #DIGIID
-       
- #################################################################################################################################################
 
-    for i in {1..15}; do
-      UUID_VAR="UUID_H$i"
-      EMAIL="H$i"
-    
-      response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/addClient' \
-        --header 'Accept: application/json' \
-        --header 'Content-Type: application/json' \
-        --data "{
-        \"id\": 11,
-          \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"${!UUID_VAR}\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"$EMAIL\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
-        }")
-    
-      if echo "$response" | grep -q '"success":true'; then
-          echo -e "${green}Client $EMAIL configuration added successfully!${plain}"
-      else
-          echo -e "${red}Failed to add client $EMAIL configuration. Server responded with:${plain} $response"
-      fi
-    done
-
-    
-       #################################################################################################################################################
-       
-       uuidIP=$(generateStableUIDByServerIP)
-        echo "The UUIDIP is: $uuidIP"
-   
-               response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/addClient' \
-    --header 'Accept: application/json' \
-    --header 'Content-Type: application/json' \
-    --data "{
-      \"id\": 11,
-      \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"$uuidIP\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"BYIP\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
-    }")
-    
-    if echo "$response" | grep -q '"success":true'; then
-        echo -e "${green}Client configuration added successfully!${plain}"
-    else
-        echo -e "${red}Failed to add client configuration. Server responded with:${plain} $response"
-    fi
-    
-    
-       #################################################################################################################################################
-   
-#################################################################################################################################################
-
-
-        
-        
-
-        for i in {1..15}; do
-          UUID_VAR="UUID_L$i"
-          EMAIL="L$i"
-        
-          response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/addClient' \
-            --header 'Accept: application/json' \
-            --header 'Content-Type: application/json' \
-            --data "{
-              \"id\": 11,
-              \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"${!UUID_VAR}\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"$EMAIL\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
-            }")
-        
-          if echo "$response" | grep -q '"success":true'; then
-              echo -e "${green}Client $EMAIL configuration added successfully!${plain}"
-          else
-              echo -e "${red}Failed to add client $EMAIL configuration. Server responded with:${plain} $response"
-          fi
-        done
 
     
 
@@ -513,13 +444,83 @@ add_config1() {
           response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/add' \
     --header 'Accept: application/json' \
     --header 'Content-Type: application/json' \
-    --data '{"id":18,"userId":0,"up":0,"down":0,"total":0,"remark":"rax","enable":true,"expiryTime":0,"listen":"","port":443,"protocol":"vless","settings":"{\n  \"clients\": [\n    {\n      \"id\": \"ef34e127-cd3a-4ccc-aa69-88a09c6c4706\",\n      \"flow\": \"\",\n      \"email\": \"mrjklxw1\",\n      \"limitIp\": 0,\n      \"totalGB\": 0,\n      \"expiryTime\": 0,\n      \"enable\": true,\n      \"tgId\": \"\",\n      \"subId\": \"7opjwtzbr4ddn60g\",\n      \"reset\": 0\n    }\n  ],\n  \"decryption\": \"none\",\n  \"fallbacks\": []\n}","streamSettings":"{\n  \"network\": \"ws\",\n  \"security\": \"tls\",\n  \"externalProxy\": [],\n  \"tlsSettings\": {\n    \"serverName\": \"\",\n    \"minVersion\": \"1.2\",\n    \"maxVersion\": \"1.3\",\n    \"cipherSuites\": \"\",\n    \"rejectUnknownSni\": false,\n    \"disableSystemRoot\": false,\n    \"enableSessionResumption\": false,\n    \"certificates\": [\n      {\n        \"certificateFile\": \"/root/cert.crt\",\n        \"keyFile\": \"/root/private.key\",\n        \"ocspStapling\": 3600,\n        \"oneTimeLoading\": false,\n        \"usage\": \"encipherment\",\n        \"buildChain\": false\n      }\n    ],\n    \"alpn\": [\n      \"h3\",\n      \"h2\",\n      \"http/1.1\"\n    ],\n    \"settings\": {\n      \"allowInsecure\": false,\n      \"fingerprint\": \"\"\n    }\n  },\n  \"wsSettings\": {\n    \"acceptProxyProtocol\": false,\n    \"path\": \"/users\",\n    \"host\": \"\",\n    \"headers\": {}\n  }\n}","tag":"inbound-443","sniffing":"{\n  \"enabled\": false,\n  \"destOverride\": [\n    \"http\",\n    \"tls\",\n    \"quic\",\n    \"fakedns\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[{"id":38,"inboundId":18,"enable":true,"email":"mrjklxw1","up":0,"down":0,"expiryTime":0,"total":0,"reset":0}]}')
+    --data '{"id":20,"userId":0,"up":0,"down":0,"total":0,"remark":"digi2","enable":true,"expiryTime":0,"listen":"","port":443,"protocol":"vless","settings":"{\n  \"clients\": [\n    {\n      \"id\": \"6d0a296f-0d49-4d8e-959c-1d0543472477\",\n      \"flow\": \"\",\n      \"email\": \"2pvzhn1k\",\n      \"limitIp\": 0,\n      \"totalGB\": 0,\n      \"expiryTime\": 0,\n      \"enable\": true,\n      \"tgId\": \"\",\n      \"subId\": \"7tnyc3zrjv3vlp4h\",\n      \"comment\": \"\",\n      \"reset\": 0\n    }\n  ],\n  \"decryption\": \"none\",\n  \"fallbacks\": []\n}","streamSettings":"{\n  \"network\": \"ws\",\n  \"security\": \"none\",\n  \"externalProxy\": [],\n  \"wsSettings\": {\n    \"acceptProxyProtocol\": false,\n    \"path\": \"/?ed=2048\",\n    \"host\": \"\",\n    \"headers\": {},\n    \"heartbeatPeriod\": 0\n  }\n}","tag":"inbound-443","sniffing":"{\n  \"enabled\": true,\n  \"destOverride\": [\n    \"http\",\n    \"tls\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[{"id":80,"inboundId":20,"enable":true,"email":"2pvzhn1k","up":0,"down":0,"expiryTime":0,"total":0,"reset":0}]}')
 
     if echo "$response" | grep -q '"success":true'; then
         echo -e "${green}Client configuration added successfully!${plain}"
     else
         echo -e "${red}Failed to add client configuration. Server responded with:${plain} $response"
     fi
+    
+    
+    
+        for i in {1..15}; do
+      UUID_VAR="UUID_H$i"
+      EMAIL="H$i"
+    
+      response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/addClient' \
+        --header 'Accept: application/json' \
+        --header 'Content-Type: application/json' \
+        --data "{
+        \"id\": 20,
+          \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"${!UUID_VAR}\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"$EMAIL\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
+        }")
+    
+      if echo "$response" | grep -q '"success":true'; then
+          echo -e "${green}Client $EMAIL configuration added successfully!${plain}"
+      else
+          echo -e "${red}Failed to add client $EMAIL configuration. Server responded with:${plain} $response"
+      fi
+    done
+
+    
+       #################################################################################################################################################
+       
+       uuidIP=$(generateStableUIDByServerIP)
+        echo "The UUIDIP is: $uuidIP"
+   
+               response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/addClient' \
+    --header 'Accept: application/json' \
+    --header 'Content-Type: application/json' \
+    --data "{
+      \"id\": 20,
+      \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"$uuidIP\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"BYIP\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
+    }")
+    
+    if echo "$response" | grep -q '"success":true'; then
+        echo -e "${green}Client configuration added successfully!${plain}"
+    else
+        echo -e "${red}Failed to add client configuration. Server responded with:${plain} $response"
+    fi
+    
+    
+       #################################################################################################################################################
+   
+#################################################################################################################################################
+
+
+        
+        
+
+        for i in {1..15}; do
+          UUID_VAR="UUID_L$i"
+          EMAIL="L$i"
+        
+          response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/addClient' \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --data "{
+              \"id\": 20,
+              \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"${!UUID_VAR}\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"$EMAIL\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
+            }")
+        
+          if echo "$response" | grep -q '"success":true'; then
+              echo -e "${green}Client $EMAIL configuration added successfully!${plain}"
+          else
+              echo -e "${red}Failed to add client $EMAIL configuration. Server responded with:${plain} $response"
+          fi
+        done
+
     
     
     
