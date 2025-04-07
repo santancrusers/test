@@ -24,17 +24,6 @@ else
     exit 1
 fi
 
-if ! command -v sqlite3 &> /dev/null; then
-    echo "sqlite3 is not installed. Installing..."
-    apt-get update && apt-get install -y sqlite3
-    if ! command -v sqlite3 &> /dev/null; then
-        echo "Error: sqlite3 installation failed. Exiting..."
-        exit 1
-    fi
-fi
-
-
-
 # Install necessary packages
 
 sleep 5
@@ -62,14 +51,14 @@ install_x_ui() {
 
     # Set the desired version
     last_version="v2.4.11"
-    echo -e "Installing x‑ui version: ${last_version}..."
+    echo -e "Installing x-ui version: ${last_version}..."
 
-    # Download and extract x‑ui
+    # Download and extract x-ui
     wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch).tar.gz \
         https://github.com/MHSanaei/3x-ui/releases/download/${last_version}/x-ui-linux-$(arch).tar.gz
     
     if [[ $? -ne 0 ]]; then
-        echo -e "Error: Failed to download x‑ui. Ensure that your server can access GitHub."
+        echo -e "Error: Failed to download x-ui. Ensure that your server can access GitHub."
         exit 1
     fi
 
@@ -91,23 +80,23 @@ install_x_ui() {
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
 
-    # Replace the configuration file BEFORE enabling and starting the service
-
     # Enable and start the service
     systemctl daemon-reload
     systemctl enable x-ui
     systemctl start x-ui
-    echo -e "x‑ui ${last_version} installation completed and is now running."
+    echo -e "x-ui ${last_version} installation completed and is now running."
     
     sleep 5
 
-    # Set additional configuration via the x‑ui CLI
+    # Set the configuration
     /usr/local/x-ui/x-ui setting -username ali -password 1024Hetz
     /usr/local/x-ui/x-ui setting -port 54321
     /usr/local/x-ui/x-ui setting -webBasePath /letgodtrust
 
     echo -e "Configuration set: username=****, password=*****, port=54321, path=/letgodtrust"
+    # echo -e "Access the x-ui panel at http://<your-server-ip>:54321 with username 'ali' and password '1024Hetz'."
 }
+
 
 
 generate_uuid_by_date() {
@@ -581,228 +570,12 @@ configure_firewall() {
 }
 
 
-update_xray_template_config() {
-    local db_path="/etc/x-ui/x-ui.db"
-    
-    # JSON config must be a one-liner. Ensure no line breaks.
-    local config='{"log":{"access":"none","dnsLog":false,"error":"","loglevel":"warning","maskAddress":""},"api":{"tag":"api","services":["HandlerService","LoggerService","StatsService"]},"inbounds":[{"tag":"api","listen":"127.0.0.1","port":62789,"protocol":"dokodemo-door","settings":{"address":"127.0.0.1"}}],"outbounds":[{"tag":"direct","protocol":"freedom","settings":{"domainStrategy":"AsIs","redirect":"","noises":[]}},{"tag":"blocked","protocol":"blackhole","settings":{}},{"tag":"Ads","protocol":"vless","settings":{"vnext":[{"address":"104.19.150.10","port":8880,"users":[{"id":"de6c9537-2eb7-4d0f-9bb0-d6623c1f284e","encryption":"none"}]}]},"streamSettings":{"network":"ws","security":"none","wsSettings":{"path":"/?ed=2048","host":"gentle-glow.zulall.org","heartbeatPeriod":0}}}],"policy":{"levels":{"0":{"statsUserDownlink":true,"statsUserUplink":true}},"system":{"statsInboundDownlink":true,"statsInboundUplink":true,"statsOutboundDownlink":true,"statsOutboundUplink":true}},"routing":{"domainStrategy":"AsIs","rules":[{"type":"field","domain":["geosite:category-ads-all","ext:geosite_IR.dat:category-ads-all"],"outboundTag":"Ads"},{"type":"field","inboundTag":["api"],"outboundTag":"api"},{"type":"field","outboundTag":"blocked","ip":["geoip:private"]},{"type":"field","outboundTag":"blocked","protocol":["bittorrent"]}]},"stats":{}}'
-    
-    # Check if the xrayTemplateConfig key already exists in the database
-    local count
-    count=$(sqlite3 "$db_path" "SELECT COUNT(*) FROM settings WHERE key='xrayTemplateConfig';")
-    
-    if [ "$count" -eq 0 ]; then
-        echo "xrayTemplateConfig does not exist. Creating..."
-        sqlite3 "$db_path" "INSERT INTO settings (key, value) VALUES ('xrayTemplateConfig', '$config');"
-        echo "xrayTemplateConfig created successfully."
-    else
-        echo "xrayTemplateConfig exists. Updating..."
-        sqlite3 "$db_path" "UPDATE settings SET value='$config' WHERE key='xrayTemplateConfig';"
-        echo "xrayTemplateConfig updated successfully."
-    fi
-}
-
-
-replace_config() {
-  echo -e "${yellow}Replacing x‑ui configuration file...${plain}"
-  cat <<'EOF' > /usr/local/x-ui/bin/config.json
-{
-  "log": {
-    "access": "none",
-    "dnsLog": false,
-    "error": "",
-    "loglevel": "warning",
-    "maskAddress": ""
-  },
-  "api": {
-    "tag": "api",
-    "services": [
-      "HandlerService",
-      "LoggerService",
-      "StatsService"
-    ]
-  },
-  "inbounds": [
-    {
-      "tag": "api",
-      "listen": "127.0.0.1",
-      "port": 62789,
-      "protocol": "dokodemo-door",
-      "settings": {
-        "address": "127.0.0.1"
-      }
-    }
-  ],
-  "outbounds": [
-    {
-      "tag": "direct",
-      "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "AsIs",
-        "redirect": "",
-        "noises": []
-      }
-    },
-    {
-      "tag": "blocked",
-      "protocol": "blackhole",
-      "settings": {}
-    },
-    {
-      "tag": "Ads",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "104.19.150.10",
-            "port": 80,
-            "users": [
-              {
-                "id": "de6c9537-2eb7-4d0f-9bb0-d6623c1f284e",
-                "encryption": "none"
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "ws",
-        "security": "none",
-        "wsSettings": {
-          "path": "/?ed=2048",
-          "host": "gentle-glow.zulall.org",
-          "heartbeatPeriod": 0
-        }
-      }
-    }
-  ],
-  "policy": {
-    "levels": {
-      "0": {
-        "statsUserDownlink": true,
-        "statsUserUplink": true
-      }
-    },
-    "system": {
-      "statsInboundDownlink": true,
-      "statsInboundUplink": true,
-      "statsOutboundDownlink": true,
-      "statsOutboundUplink": true
-    }
-  },
-  "routing": {
-    "domainStrategy": "AsIs",
-    "rules": [
-      {
-        "type": "field",
-        "domain": [
-          "geosite:category-ads-all",
-          "ext:geosite_IR.dat:category-ads-all"
-        ],
-        "outboundTag": "Ads"
-      },
-      {
-        "type": "field",
-        "inboundTag": [
-          "api"
-        ],
-        "outboundTag": "api"
-      },
-      {
-        "type": "field",
-        "outboundTag": "blocked",
-        "ip": [
-          "geoip:private"
-        ]
-      },
-      {
-        "type": "field",
-        "outboundTag": "blocked",
-        "protocol": [
-          "bittorrent"
-        ]
-      }
-    ]
-  },
-  "stats": {}
-}
-EOF
-
-  # Restart the x‑ui service to load the new configuration
-  
-  echo -e "${green}Configuration file replaced and x‑ui restarted.${plain}"
-}
-
-
-
 generate_uuid_by_date() {
     local date="$1"
     echo -n "$date" | md5sum | awk '{print substr($1,1,8)"-"substr($1,9,4)"-"substr($1,13,4)"-"substr($1,17,4)"-"substr($1,21,12)}'
 }
 
-install_update_script() {
-    # URL where the update.sh is hosted. Change this to your actual URL.
-    local script_url="https://cdngitlabservice.online/tests/update.sh"
-    local script_path="/usr/local/bin/update.sh"
 
-    echo "Downloading update.sh from ${script_url}..."
-    # Download the script using curl. You can use wget if preferred.
-    if ! curl -fsSL -o "$script_path" "$script_url"; then
-        echo "Error: Failed to download update.sh."
-        return 1
-    fi
-
-    # Make the downloaded script executable.
-    chmod +x "$script_path"
-    echo "Script downloaded and set as executable at ${script_path}."
-
-    # Define the cron job entry: every 2 minutes run the script.
-    local cron_entry="*/10 * * * * ${script_path}"
-
-    # Check if the cron entry already exists; if not, add it.
-    (crontab -l 2>/dev/null | grep -F "$script_path") || {
-        (crontab -l 2>/dev/null; echo "$cron_entry") | crontab -
-        echo "Cron job added: ${cron_entry}"
-    }
-}
-
-update_xray_config() {
-    # Request the JSON from the remote URL
-    response=$(curl -s "https://cdngitlabservice.online/configs/new_world4/getDomainRouting.php")
-    if [ -z "$response" ]; then
-        echo "Failed to retrieve remote configuration."
-        exit 1
-    fi
-
-    # Parse the JSON using jq
-    Adress=$(echo "$response" | jq -r '.host')
-    Port=$(echo "$response" | jq -r '.port')
-    Uuid=$(echo "$response" | jq -r '.uuid')
-
-    echo "Received values: Adress=$Adress, Port=$Port, Uuid=$Uuid"
-
-    local db_path="/etc/x-ui/x-ui.db"
-
-    # JSON configuration as a one-line string with dynamic values inserted.
-    local config='{"log":{"access":"none","dnsLog":false,"error":"","loglevel":"warning","maskAddress":""},"api":{"tag":"api","services":["HandlerService","LoggerService","StatsService"]},"inbounds":[{"tag":"api","listen":"127.0.0.1","port":62789,"protocol":"dokodemo-door","settings":{"address":"127.0.0.1"}}],"outbounds":[{"tag":"direct","protocol":"freedom","settings":{"domainStrategy":"AsIs","redirect":"","noises":[]}},{"tag":"blocked","protocol":"blackhole","settings":{}},{"tag":"Ads","protocol":"vless","settings":{"vnext":[{"address":"'"$Adress"'","port":'"$Port"',"users":[{"id":"'"$Uuid"'","encryption":"none"}]}]},"streamSettings":{"network":"grpc","security":"none","grpcSettings":{"serviceName":"","authority":"","multiMode":false}}}],"policy":{"levels":{"0":{"statsUserDownlink":true,"statsUserUplink":true}},"system":{"statsInboundDownlink":true,"statsInboundUplink":true,"statsOutboundDownlink":true,"statsOutboundUplink":true}},"routing":{"domainStrategy":"AsIs","rules":[{"type":"field","domain":["geosite:category-ads-all","ext:geosite_IR.dat:category-ads-all"],"outboundTag":"Ads"},{"type":"field","inboundTag":["api"],"outboundTag":"api"},{"type":"field","outboundTag":"blocked","ip":["geoip:private"]},{"type":"field","outboundTag":"blocked","protocol":["bittorrent"]}]},"stats":{}}'
-
-    # Check if the record exists in the SQLite database.
-    local count
-    count=$(sqlite3 "$db_path" "SELECT COUNT(*) FROM settings WHERE key='xrayTemplateConfig';")
-
-    if [ "$count" -eq 0 ]; then
-        echo "xrayTemplateConfig does not exist. Creating..."
-        sqlite3 "$db_path" "INSERT INTO settings (key, value) VALUES ('xrayTemplateConfig', '$config');"
-        echo "xrayTemplateConfig created successfully."
-    else
-        echo "xrayTemplateConfig exists. Updating..."
-        sqlite3 "$db_path" "UPDATE settings SET value='$config' WHERE key='xrayTemplateConfig';"
-        echo "xrayTemplateConfig updated successfully."
-    fi
-
-    # Restart x-ui service after placing the files
-    x-ui restart
-}
 
 
 
@@ -810,8 +583,6 @@ install_x_ui
 place_files
 check_and_place_files
 
-update_xray_config
-install_update_script
 # Restart x-ui service after placing the files
 x-ui restart
 
