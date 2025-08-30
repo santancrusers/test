@@ -494,7 +494,7 @@ add_config1() {
     --header 'Accept: application/json' \
     --header 'Content-Type: application/json' \
     --data "{
-      \"id\": 21,
+      \"id\": 1,
       \"settings\": \"{\\\"clients\\\":[{\\\"id\\\":\\\"$uuidIP\\\",\\\"alterId\\\":0,\\\"email\\\":\\\"BYIP\\\",\\\"limitIp\\\":0,\\\"totalGB\\\":0,\\\"expiryTime\\\":0,\\\"enable\\\":true,\\\"tgId\\\":\\\"\\\",\\\"subId\\\":\\\"\\\"}]}\"
     }")
     
