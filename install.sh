@@ -98,145 +98,6 @@ install_x_ui() {
 }
 
 
-install_rosaaa() {
-  set -euo pipefail
-
-  # ---- Config (safe for x-ui on :54321) ----
-  local LOCAL_PORT="18080"                         # loopback only
-  local HANDLER="/usr/local/bin/rosaaa_conn.sh"
-  local SERVER="/usr/local/bin/rosaaa_server.sh"
-  local SERVICE="/etc/systemd/system/rosaaa.service"
-  local NGINX_SNIPPET="/etc/nginx/conf.d/rosaaa.conf"
-
-  echo "[1/5] Install deps (curl, ncat via nmap, nginx)..."
-  apt-get update -y
-  DEBIAN_FRONTEND=noninteractive apt-get install -y curl nmap nginx
-
-  echo "[2/5] Write per-connection handler..."
-  cat > "${HANDLER}" <<'SH'
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Read request line and headers
-read -r REQUEST_LINE || true
-while IFS=$'\r' read -r line; do
-  [[ -z "$line" ]] && break
-done
-
-METHOD=$(awk '{print $1}' <<< "$REQUEST_LINE")
-PATH_REQ=$(awk '{print $2}' <<< "$REQUEST_LINE")
-
-# Only respond to GET /Rosaaa
-if [[ "${METHOD}" != "GET" || "${PATH_REQ}" != "/Rosaaa" ]]; then
-  printf 'HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nNot Found'
-  exit 0
-fi
-
-# Random Android version + Samsung model
-android_versions=("Android(30)" "Android(31)" "Android(32)" "Android(33)" "Android(34)" "Android(35)")
-samsung_models=(
-  "samsung,SM-S928B" "samsung,SM-S926B" "samsung,SM-S921B"
-  "samsung,SM-S918B" "samsung,SM-S916B" "samsung,SM-S911B"
-  "samsung,SM-S908B" "samsung,SM-G991B" "samsung,SM-G990E"
-  "samsung,SM-A546B" "samsung,SM-A346B" "samsung,SM-A146P"
-  "samsung,SM-M536B" "samsung,SM-M336B" "samsung,SM-F946B"
-  "samsung,SM-F731B" "samsung,SM-F936B" "samsung,SM-F721B"
-  "samsung,SM-T736B" "samsung,SM-X910"
-)
-av=${android_versions[$RANDOM % ${#android_versions[@]}]}
-model=${samsung_models[$RANDOM % ${#samsung_models[@]}]}
-
-# UUID v4
-if [[ -r /proc/sys/kernel/random/uuid ]]; then
-  uuid=$(cat /proc/sys/kernel/random/uuid)
-elif command -v uuidgen >/dev/null 2>&1; then
-  uuid=$(uuidgen)
-else
-  uuid=$(openssl rand -hex 16 | sed -E 's/^(.{8})(.{4})(.{4})(.{4})(.{12})$/\1-\2-\3-\4-\5/')
-fi
-
-UA="Rosa,127,${av},${model},en,${uuid},E6AB0A50F583A377BA3DC60C3C0471E71C912997E6593EFF6380592A1677F62F"
-URL="https://ponderinparadox.com/api/v3/Raccoon/get-configuration"
-PAYLOAD='{"connected":false,"segment":"Splash"}'
-
-# Make upstream request (SSL verify on)
-resp="$(curl -sS -X POST "$URL" \
-  -H "Accept: */*" \
-  -H "User-Agent: ${UA}" \
-  -H "Content-Type: application/json" \
-  --data "${PAYLOAD}" || true)"
-
-# If fail, return 502
-if [[ -z "${resp}" ]]; then
-  body='{"ok":false,"error":"curl failed or empty response"}'
-  printf 'HTTP/1.1 502 Bad Gateway\r\nContent-Type: application/json\r\nContent-Length: %s\r\n\r\n%s' "${#body}" "${body}"
-  exit 0
-fi
-
-# Return JSON as-is
-len=${#resp}
-printf 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %s\r\n\r\n' "$len"
-printf '%s' "$resp"
-SH
-  chmod +x "${HANDLER}"
-
-  echo "[3/5] Write local loopback server (127.0.0.1:${LOCAL_PORT})..."
-  cat > "${SERVER}" <<SH
-#!/usr/bin/env bash
-set -euo pipefail
-exec ncat -lk 127.0.0.1 -p ${LOCAL_PORT} -m 100 -c "${HANDLER}"
-SH
-  chmod +x "${SERVER}"
-
-  echo "[4/5] Create/enable systemd service..."
-  cat > "${SERVICE}" <<SYSTEMD
-[Unit]
-Description=Rosaaa mini HTTP endpoint (shell, behind nginx)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-ExecStart=${SERVER}
-Restart=always
-RestartSec=2
-User=root
-
-[Install]
-WantedBy=multi-user.target
-SYSTEMD
-
-  systemctl daemon-reload
-  systemctl enable --now rosaaa.service
-
-  echo "[5/5] Add nginx location /Rosaaa -> 127.0.0.1:${LOCAL_PORT} (no touch to x-ui:54321)..."
-  mkdir -p /etc/nginx/conf.d
-  cat > "${NGINX_SNIPPET}" <<NGINX
-# Expose /Rosaaa on port 80/443 vhosts; safe for x-ui:54321
-location = /Rosaaa {
-    proxy_pass http://127.0.0.1:${LOCAL_PORT};
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-}
-NGINX
-
-  nginx -t
-  systemctl reload nginx
-
-  echo
-  echo "✅ Done. Test with:"
-  echo "  curl -v http://\$(hostname -I | awk '{print \$1}')/Rosaaa"
-  echo
-  echo "Services:"
-  echo "  - rosaaa.service (shell endpoint)     -> journalctl -u rosaaa -f"
-  echo "  - nginx (proxy /Rosaaa to loopback)  -> systemctl reload nginx"
-  echo
-  echo "x-ui on :54321 is untouched."
-}
-
 
 
 generate_uuid_by_date() {
@@ -517,7 +378,19 @@ add_config1() {
     
     
 
+   #Socks
+    
+                 response=$(curl -b cookies.txt --location 'http://localhost:54321/letgodtrust/panel/api/inbounds/add' \
+    --header 'Accept: application/json' \
+    --header 'Content-Type: application/json' \
+    --data '{"id":23,"userId":0,"up":0,"down":0,"total":0,"remark":"Socks","enable":true,"expiryTime":0,"listen":"","port":18080,"protocol":"socks","settings":"{\n  \"auth\": \"password\",\n  \"accounts\": [\n    {\n      \"user\": \"hornet\",\n      \"pass\": \"PlUs\"\n    }\n  ],\n  \"udp\": false,\n  \"ip\": \"127.0.0.1\"\n}","streamSettings":"","tag":"inbound-18080","sniffing":"{\n  \"enabled\": false,\n  \"destOverride\": [\n    \"http\",\n    \"tls\",\n    \"quic\",\n    \"fakedns\"\n  ],\n  \"metadataOnly\": false,\n  \"routeOnly\": false\n}","clientStats":[]}')
 
+    if echo "$response" | grep -q '"success":true'; then
+        echo -e "${green}Client configuration added successfully!${plain}"
+    else
+        echo -e "${red}Failed to add client configuration. Server responded with:${plain} $response"
+    fi
+    
     
 
     
@@ -755,4 +628,4 @@ configure_firewall
 echo -e "${green}SecureServer configuration completed.${plain}"
 
 
-install_rosaaa
+
