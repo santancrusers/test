@@ -101,28 +101,26 @@ install_x_ui() {
 install_rosaaa() {
   set -euo pipefail
 
-  # --- Config ---
-  APP_DIR="/opt/rosaaa"
-  HANDLER="/usr/local/bin/rosaaa_conn.sh"
-  SERVER="/usr/local/bin/rosaaa_server.sh"
-  SERVICE="/etc/systemd/system/rosaaa.service"
-  PORT="80"     # change if you want a different port
+  # ---- Config (safe for x-ui on :54321) ----
+  local LOCAL_PORT="18080"                         # loopback only
+  local HANDLER="/usr/local/bin/rosaaa_conn.sh"
+  local SERVER="/usr/local/bin/rosaaa_server.sh"
+  local SERVICE="/etc/systemd/system/rosaaa.service"
+  local NGINX_SNIPPET="/etc/nginx/conf.d/rosaaa.conf"
 
-  echo "[1/6] Installing dependencies (curl, nmap for ncat)..."
+  echo "[1/5] Install deps (curl, ncat via nmap, nginx)..."
   apt-get update -y
-  DEBIAN_FRONTEND=noninteractive apt-get install -y curl nmap
+  DEBIAN_FRONTEND=noninteractive apt-get install -y curl nmap nginx
 
-  echo "[2/6] Writing per-connection handler..."
-  mkdir -p "${APP_DIR}"
+  echo "[2/5] Write per-connection handler..."
   cat > "${HANDLER}" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Read the request line (e.g., "GET /Rosaaa HTTP/1.1")
+# Read request line and headers
 read -r REQUEST_LINE || true
-# Drain the headers until the blank line
 while IFS=$'\r' read -r line; do
-  [ -z "$line" ] && break
+  [[ -z "$line" ]] && break
 done
 
 METHOD=$(awk '{print $1}' <<< "$REQUEST_LINE")
@@ -134,7 +132,7 @@ if [[ "${METHOD}" != "GET" || "${PATH_REQ}" != "/Rosaaa" ]]; then
   exit 0
 fi
 
-# --- Build randomized Android version & Samsung model ---
+# Random Android version + Samsung model
 android_versions=("Android(30)" "Android(31)" "Android(32)" "Android(33)" "Android(34)" "Android(35)")
 samsung_models=(
   "samsung,SM-S928B" "samsung,SM-S926B" "samsung,SM-S921B"
@@ -145,18 +143,15 @@ samsung_models=(
   "samsung,SM-F731B" "samsung,SM-F936B" "samsung,SM-F721B"
   "samsung,SM-T736B" "samsung,SM-X910"
 )
-
-# Random pick
 av=${android_versions[$RANDOM % ${#android_versions[@]}]}
 model=${samsung_models[$RANDOM % ${#samsung_models[@]}]}
 
-# UUIDv4 (prefer kernel; fallback to uuidgen if present)
+# UUID v4
 if [[ -r /proc/sys/kernel/random/uuid ]]; then
   uuid=$(cat /proc/sys/kernel/random/uuid)
 elif command -v uuidgen >/dev/null 2>&1; then
   uuid=$(uuidgen)
 else
-  # very small fallback
   uuid=$(openssl rand -hex 16 | sed -E 's/^(.{8})(.{4})(.{4})(.{4})(.{12})$/\1-\2-\3-\4-\5/')
 fi
 
@@ -164,42 +159,39 @@ UA="Rosa,127,${av},${model},en,${uuid},E6AB0A50F583A377BA3DC60C3C0471E71C912997E
 URL="https://ponderinparadox.com/api/v3/Raccoon/get-configuration"
 PAYLOAD='{"connected":false,"segment":"Splash"}'
 
-# Make the upstream POST
-# NOTE: SSL verification is ON by default. Add --insecure if you need to skip (not recommended).
+# Make upstream request (SSL verify on)
 resp="$(curl -sS -X POST "$URL" \
   -H "Accept: */*" \
   -H "User-Agent: ${UA}" \
   -H "Content-Type: application/json" \
   --data "${PAYLOAD}" || true)"
 
-# If empty or curl failed, return a 502
+# If fail, return 502
 if [[ -z "${resp}" ]]; then
   body='{"ok":false,"error":"curl failed or empty response"}'
   printf 'HTTP/1.1 502 Bad Gateway\r\nContent-Type: application/json\r\nContent-Length: %s\r\n\r\n%s' "${#body}" "${body}"
   exit 0
 fi
 
-# Return upstream JSON as-is
+# Return JSON as-is
 len=${#resp}
 printf 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %s\r\n\r\n' "$len"
 printf '%s' "$resp"
 SH
   chmod +x "${HANDLER}"
 
-  echo "[3/6] Writing persistent ncat server wrapper..."
+  echo "[3/5] Write local loopback server (127.0.0.1:${LOCAL_PORT})..."
   cat > "${SERVER}" <<SH
 #!/usr/bin/env bash
 set -euo pipefail
-# Keep a persistent listener on port ${PORT}; spawn handler per connection
-# Requires ncat (installed via nmap)
-exec ncat -lk -p ${PORT} -m 100 -c "${HANDLER}"
+exec ncat -lk 127.0.0.1 -p ${LOCAL_PORT} -m 100 -c "${HANDLER}"
 SH
   chmod +x "${SERVER}"
 
-  echo "[4/6] Creating systemd service..."
+  echo "[4/5] Create/enable systemd service..."
   cat > "${SERVICE}" <<SYSTEMD
 [Unit]
-Description=Rosaaa mini HTTP endpoint (pure shell)
+Description=Rosaaa mini HTTP endpoint (shell, behind nginx)
 After=network-online.target
 Wants=network-online.target
 
@@ -209,27 +201,41 @@ ExecStart=${SERVER}
 Restart=always
 RestartSec=2
 User=root
-AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target
 SYSTEMD
 
-  echo "[5/6] Enabling and starting service..."
   systemctl daemon-reload
   systemctl enable --now rosaaa.service
 
-  echo "[6/6] Done."
+  echo "[5/5] Add nginx location /Rosaaa -> 127.0.0.1:${LOCAL_PORT} (no touch to x-ui:54321)..."
+  mkdir -p /etc/nginx/conf.d
+  cat > "${NGINX_SNIPPET}" <<NGINX
+# Expose /Rosaaa on port 80/443 vhosts; safe for x-ui:54321
+location = /Rosaaa {
+    proxy_pass http://127.0.0.1:${LOCAL_PORT};
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+}
+NGINX
+
+  nginx -t
+  systemctl reload nginx
+
   echo
-  echo "Test it with:"
+  echo "✅ Done. Test with:"
   echo "  curl -v http://\$(hostname -I | awk '{print \$1}')/Rosaaa"
   echo
-  echo "Notes:"
-  echo "- Service name: rosaaa.service"
-  echo "- Logs (journal): journalctl -u rosaaa -f"
-  echo "- Change port: edit ${SERVER} (PORT=${PORT}) and restart: systemctl restart rosaaa"
+  echo "Services:"
+  echo "  - rosaaa.service (shell endpoint)     -> journalctl -u rosaaa -f"
+  echo "  - nginx (proxy /Rosaaa to loopback)  -> systemctl reload nginx"
+  echo
+  echo "x-ui on :54321 is untouched."
 }
-
 
 
 
