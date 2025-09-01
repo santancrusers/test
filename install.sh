@@ -709,6 +709,7 @@ configure_firewall() {
     sudo firewall-cmd --permanent --zone=public --add-port=2025/tcp
     sudo firewall-cmd --permanent --zone=public --add-port=43824/tcp
     sudo firewall-cmd --permanent --zone=public --add-port=2096/tcp
+    sudo firewall-cmd --permanent --zone=public --add-port=18080/tcp
 
     # Remove all other ports
     sudo firewall-cmd --permanent --zone=public --remove-service=ssh
