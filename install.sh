@@ -631,4 +631,3 @@ configure_firewall
 echo -e "${green}SecureServer configuration completed.${plain}"
 
 
-tor_install
